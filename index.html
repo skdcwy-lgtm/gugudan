@@ -230,6 +230,9 @@
 
       // --- 타이머 참조 ---
       const timerRef = useRef(null);
+      
+      // --- 초고속 동시 터치 에뮬레이션 시 더블 클릭 방지용 타임스탬프 참조 ---
+      const lastInputTimeRef = useRef({ p1: 0, p2: 0 });
 
       useEffect(() => {
         soundEffects.enabled = soundOn;
@@ -422,6 +425,14 @@
       };
 
       const handleKeypadPress = (playerNum, char) => {
+        // --- 소프트웨어 디바운싱: 한 유저가 100ms 이내에 두 번 이상 연속 터치하는 경우 무시 ---
+        const now = Date.now();
+        const playerKey = playerNum === 1 ? 'p1' : 'p2';
+        if (now - lastInputTimeRef.current[playerKey] < 100) {
+          return;
+        }
+        lastInputTimeRef.current[playerKey] = now;
+
         const setPlayer = playerNum === 1 ? setP1 : setP2;
 
         setPlayer(prev => {
@@ -443,10 +454,11 @@
         }
       };
 
-      // --- 지연 없는 멀티터치 방지 전용 통합 포인터 다운 트리거 ---
+      // --- 지연 및 중복 방지를 결합한 순수 클릭/터치 수신기 ---
       const triggerInput = (playerNum, char, e) => {
-        if (e && e.cancelable) {
-          e.preventDefault(); // 스크롤 및 브라우저 기본 반응 차단
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
         }
         handleKeypadPress(playerNum, char);
       };
@@ -683,31 +695,31 @@
                   </div>
                 </div>
 
-                {/* 지연 없는 초고속 터치 키패드 P2 (onPointerDown 통합 적용) */}
+                {/* 지연 없는 초고속 터치 키패드 P2 (onPointerDown 대신 onClick 단일화 + 디바운스 바인딩) */}
                 <div className="w-full max-w-xs mx-auto grid grid-cols-3 gap-1 sm:gap-1.5 pt-2 pb-1 shrink-0 touch-none">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
                       key={num}
-                      onPointerDown={(e) => triggerInput(2, num.toString(), e)}
+                      onClick={(e) => triggerInput(2, num.toString(), e)}
                       className="bg-slate-900/80 active:bg-slate-800 border border-slate-800 rounded-xl py-1.5 sm:py-2.5 md:py-3 text-sm sm:text-lg font-bold text-slate-300 touch-none select-none"
                     >
                       {num}
                     </button>
                   ))}
                   <button
-                    onPointerDown={(e) => triggerInput(2, 'C', e)}
+                    onClick={(e) => triggerInput(2, 'C', e)}
                     className="bg-slate-950 border border-rose-950/60 active:bg-rose-950 text-rose-400 rounded-xl py-1.5 sm:py-2.5 text-[11px] sm:text-xs font-black uppercase touch-none select-none"
                   >
                     지우기
                   </button>
                   <button
-                    onPointerDown={(e) => triggerInput(2, '0', e)}
+                    onClick={(e) => triggerInput(2, '0', e)}
                     className="bg-slate-900/80 active:bg-slate-800 border border-slate-800 rounded-xl py-1.5 sm:py-2.5 md:py-3 text-sm sm:text-lg font-bold text-slate-300 touch-none select-none"
                   >
                     0
                   </button>
                   <button
-                    onPointerDown={(e) => triggerInput(2, 'ENTER', e)}
+                    onClick={(e) => triggerInput(2, 'ENTER', e)}
                     className="bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-xl py-1.5 sm:py-2.5 text-[11px] sm:text-xs font-black uppercase shadow-md shadow-rose-950/50 touch-none select-none"
                   >
                     입력
@@ -813,31 +825,31 @@
                   </div>
                 </div>
 
-                {/* 지연 없는 초고속 터치 키패드 P1 (onPointerDown 통합 적용) */}
+                {/* 지연 없는 초고속 터치 키패드 P1 (onPointerDown 대신 onClick 단일화 + 디바운스 바인딩) */}
                 <div className="w-full max-w-xs mx-auto grid grid-cols-3 gap-1 sm:gap-1.5 pt-2 pb-1 shrink-0 touch-none">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
                       key={num}
-                      onPointerDown={(e) => triggerInput(1, num.toString(), e)}
+                      onClick={(e) => triggerInput(1, num.toString(), e)}
                       className="bg-slate-900/80 active:bg-slate-800 border border-slate-800 rounded-xl py-1.5 sm:py-2.5 md:py-3 text-sm sm:text-lg font-bold text-slate-300 touch-none select-none"
                     >
                       {num}
                     </button>
                   ))}
                   <button
-                    onPointerDown={(e) => triggerInput(1, 'C', e)}
+                    onClick={(e) => triggerInput(1, 'C', e)}
                     className="bg-slate-950 border border-rose-950/60 active:bg-rose-950 text-rose-400 rounded-xl py-1.5 sm:py-2.5 text-[11px] sm:text-xs font-black uppercase touch-none select-none"
                   >
                     지우기
                   </button>
                   <button
-                    onPointerDown={(e) => triggerInput(1, '0', e)}
+                    onClick={(e) => triggerInput(1, '0', e)}
                     className="bg-slate-900/80 active:bg-slate-800 border border-slate-800 rounded-xl py-1.5 sm:py-2.5 md:py-3 text-sm sm:text-lg font-bold text-slate-300 touch-none select-none"
                   >
                     0
                   </button>
                   <button
-                    onPointerDown={(e) => triggerInput(1, 'ENTER', e)}
+                    onClick={(e) => triggerInput(1, 'ENTER', e)}
                     className="bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white rounded-xl py-1.5 sm:py-2.5 text-[11px] sm:text-xs font-black uppercase shadow-md shadow-blue-950/50 touch-none select-none"
                   >
                     입력
